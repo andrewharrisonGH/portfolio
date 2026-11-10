@@ -1,0 +1,32 @@
+---
+interface Props { title: string; description: string; }
+const { title, description } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+<!doctype html>
+<html lang="en-AU">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <title>{title} | Andrew Harrison</title>
+  </head>
+  <body>
+    <a href="#main">Skip to content</a>
+    <header><a href="/">Andrew Harrison</a></header>
+    <main id="main"><slot /></main>
+    <footer><a href="https://github.com/andrewharrisonGH">GitHub</a></footer>
+  </body>
+</html>
+<style is:global>
+  /* Dark developer baseline; page composition follows separately. */
+  :root { color-scheme: dark; font-family: system-ui, sans-serif; line-height: 1.6; color: #e2e8f0; background: #0d1117; }
+  body { max-width: 72rem; margin: auto; padding: 1.5rem; }
+  main { min-height: 65vh; padding-block: 2rem; }
+  a { color: #78dcca; }
+  img { max-width: 100%; height: auto; }
+  article { max-width: 75ch; }
+  pre { overflow-x: auto; padding: 1rem; }
+  :focus-visible { outline: 3px solid #78dcca; outline-offset: 4px; }
+</style>

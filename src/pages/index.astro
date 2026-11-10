@@ -1,0 +1,28 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+const projects = (await getCollection('projects', ({ data }) => import.meta.env.DEV || !data.draft))
+  .sort((a, b) => a.data.order - b.data.order || a.data.title.localeCompare(b.data.title));
+const categories = [...new Set(projects.map(({ data }) => data.category))];
+---
+<Base title="Coding projects" description="Coding projects by Andrew Harrison.">
+  <h1>Coding projects</h1>
+  {categories.map((category) => (
+    <section>
+      <h2>{category}</h2>
+      <ul>
+        {projects.filter(({ data }) => data.category === category).map((project) => (
+          <li>
+            <article>
+              {project.data.image && <img src={project.data.image.src} alt={project.data.image.alt} loading="lazy" />}
+              <h3><a href={`/projects/${project.id}/`}>{project.data.title}</a></h3>
+              {project.data.draft && <p>Draft — local development preview</p>}
+              <p>{project.data.description}</p>
+            </article>
+          </li>
+        ))}
+      </ul>
+    </section>
+  ))}
+  {projects.length === 0 && <p>Project write-ups are being prepared.</p>}
+</Base>
