@@ -4,33 +4,41 @@ Source repository: https://github.com/andrewharrisonGH/portfolio
 
 Intended public address: https://andrew-harrison.dev
 
-Astro generates static pages from Markdown. Cloudflare Workers serves the output.
-This starter establishes content and deployment structure; visual design follows separately.
+Astro generates static pages from Markdown. Cloudflare Workers serves the output,
+with deployments connected to the GitHub repository. The domain and Worker were
+confirmed working by the owner during setup.
 
-Design direction: a minimal bioinformatics developer portfolio with a dark background,
-clean typography, and restrained accents.
+Design: a minimal bioinformatics developer portfolio with a dark background,
+clean typography, and restrained mint accents. The homepage includes a biography,
+project tiles grouped by category, and personal interests. Protein Pirouettes has
+a dedicated project page with the supplied abstract, reported benchmark results,
+and an interactive rotational augmentation schematic.
 
-## Current setup state
+## Editing the website
 
-Dependencies are installed with Linux Node 24, and `npm run build` has passed.
-The dependency lockfile is included. The production output contains the landing
-page and 404 page; the thesis draft is excluded as intended.
+- `src/content/about.md`: introduction, full bio, and interests.
+- `src/content/projects/*.md`: project metadata and detailed write-ups.
+- `src/styles/global.css`: site-wide design and responsive layouts.
+- `src/components/RotationDemo.astro`: interactive schematic.
+- `src/lib/rotation.ts`: rotation maths and synthetic fragment geometry.
 
-The local Git repository uses branch `main` with `origin` pointing to
-`https://github.com/andrewharrisonGH/portfolio.git`. These files were prepared
-locally rather than cloned. No push has been verified: the setup session cannot
-resolve github.com, so existing remote contents have not been inspected.
-No Cloudflare resources or DNS records have been changed.
+The thesis results come from the owner's conference abstract. The demo and SVG
+illustration use synthetic geometry, not PDB coordinates or model predictions.
+No research dependencies, uploads, or inference services run in the website.
 
-From a network-enabled Ubuntu terminal, publish the local branch with:
+## Validate and publish changes
 
 ```bash
-cd ~/portfolio
-git push -u origin main
+npm test
+npm run build
+git add src public tests package.json package-lock.json README.md
+git commit -m "Update portfolio content and design"
+git push origin main
 ```
 
-If GitHub rejects the push because the repository already has commits, fetch and
-review that history before merging it. Do not force-push over existing history.
+Cloudflare builds and deploys changes pushed to `main`. The dependency lockfile
+is tracked. Review changes before committing and do not force-push over remote
+history. If commits are already created, only the push is needed.
 
 ## WSL development
 
@@ -63,6 +71,9 @@ Supported frontmatter:
 
 ```yaml
 title: A project title
+shortTitle: Optional shorter tile heading
+subtitle: Optional subtitle
+kind: Research project
 description: A short description for the tile and page metadata.
 category: Research
 tags: [Python]
@@ -75,10 +86,14 @@ repository: https://github.com/andrewharrisonGH/example
 demonstration: https://example.com/demo
 ```
 
-`image`, `repository`, and `demonstration` are optional. Store images in
+`shortTitle`, `subtitle`, `image`, `repository`, `demonstration`, `demo`, and
+`results` are optional. `results` accepts an array of `dataset`, `baseline`, and
+`augmented` values for direct RMSE in kcal/mol. Store images in
 `public/images/projects/` and videos in `public/videos/`. Regular Markdown supports
 images and links; inline HTML can embed short video clips. Bespoke interactive
-demonstrations can later use Astro components or MDX.
+demonstrations use Astro components. Set `demo: rotation` for the rotation schematic.
+
+Protein Pirouettes is included in production builds (`draft: false`).
 
 Draft entries appear in `npm run dev`, but are excluded from production pages,
 including direct detail-page routes. Set `draft: false` when ready to publish.
@@ -101,7 +116,6 @@ After the production build succeeds and the source and lockfile are in GitHub:
 
 Subsequent pushes to `main` build and deploy automatically. Feature branches and
 pull requests can be used to review design and content changes before merging.
-The first deployment will show the scaffold until the design and content are ready.
 
 Domain attachment is intentionally a dashboard step after a verified deployment;
 `wrangler.jsonc` does not attach or change domains automatically.

@@ -1,0 +1,143 @@
+<rotation-demo>
+  <div class="demo-toolbar"><span class="eyebrow">Same pair / shared rotation</span><span class="label-pill">Experimental ΔΔG label unchanged</span></div>
+  <div class="demo-canvases">
+    <figure><figcaption><span class="legend-dot wild-type"></span> Wild type</figcaption><canvas width="480" height="340" data-structure="wild" role="img" aria-label="Schematic wild-type fragment, rotated using the controls below."></canvas></figure>
+    <figure><figcaption><span class="legend-dot mutant"></span> Mutant</figcaption><canvas width="480" height="340" data-structure="mutant" role="img" aria-label="Schematic mutant fragment, with the mutation marker in coral, rotated using the same controls."></canvas></figure>
+  </div>
+  <div class="demo-controls">
+    <fieldset><legend>Rotate both structures</legend><div class="sliders">
+      <label>X axis <output data-output="x">0°</output><input type="range" min="0" max="360" step="5" value="0" data-axis="x" /></label>
+      <label>Y axis <output data-output="y">0°</output><input type="range" min="0" max="360" step="5" value="0" data-axis="y" /></label>
+      <label>Z axis <output data-output="z">0°</output><input type="range" min="0" max="360" step="5" value="0" data-axis="z" /></label>
+    </div></fieldset>
+    <div class="demo-options"><label class="voxel-toggle"><input type="checkbox" data-voxels /> Show schematic voxel bins</label><button type="button" class="reset-button" data-reset>Reset rotation <span aria-hidden="true">↺</span></button></div>
+    <p class="demo-summary" aria-live="polite" data-summary>Rotation: X 0°, Y 0°, Z 0°. Experimental label unchanged.</p>
+  </div>
+  <p class="demo-caption">Illustrative geometry, not a PDB structure or model prediction. The coral bead marks the mutation; both panels use the same schematic geometry. Voxel mode shows occupied bins, not the feature channels or densities used by ThermoNet.</p>
+  <noscript><p class="no-js">Enable JavaScript to explore the rotation controls. RoDA rotates paired structures before voxelisation, preserving their experimental label.</p></noscript>
+</rotation-demo>
+
+<script>
+  import { rotate, voxelCentre, schematicFragment, type Point3D, type Angles } from '../lib/rotation';
+
+  class RotationDemo extends HTMLElement {
+    connectedCallback() {
+      if (this.dataset.ready) return;
+      this.dataset.ready = 'true';
+      const sliders = [...this.querySelectorAll<HTMLInputElement>('[data-axis]')];
+      const voxels = this.querySelector<HTMLInputElement>('[data-voxels]')!;
+      const summary = this.querySelector<HTMLElement>('[data-summary]')!;
+      const points = schematicFragment();
+      const draw = () => {
+        const angles = sliders.map((input) => Number(input.value)) as Angles;
+        sliders.forEach((input) => {
+          this.querySelector<HTMLOutputElement>(`[data-output="${input.dataset.axis}"]`)!.value = `${input.value}°`;
+          input.setAttribute('aria-valuetext', `${input.value} degrees`);
+        });
+        summary.textContent = `Rotation: X ${angles[0]}°, Y ${angles[1]}°, Z ${angles[2]}°. ${voxels.checked ? 'Schematic voxel bins visible. ' : ''}Experimental label unchanged.`;
+        this.querySelectorAll<HTMLCanvasElement>('canvas').forEach((canvas) => {
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return;
+          const width = 480, height = 340;
+          const dpr = Math.min(window.devicePixelRatio || 1, 2);
+          canvas.width = width * dpr;
+          canvas.height = height * dpr;
+          ctx.scale(dpr, dpr);
+          ctx.clearRect(0, 0, width, height);
+          const project = (point: Point3D) => {
+            const [x, y, z] = rotate(point, [18, -24, 0]);
+            return { x: width / 2 + x * 42, y: height / 2 - y * 42, z };
+          };
+          const line = (a: Point3D, b: Point3D, color: string) => {
+            const from = project(a), to = project(b);
+            ctx.strokeStyle = color; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(from.x, from.y); ctx.lineTo(to.x, to.y); ctx.stroke();
+          };
+          // A fixed reference grid makes changing orientations visible.
+          for (let i = -3; i <= 3; i++) {
+            line([i, -3, -3], [i, -3, 3], '#293336');
+            line([-3, -3, i], [3, -3, i], '#293336');
+          }
+          const transformed = points.map((point, index) => {
+            const rotated = rotate(point, angles);
+            const coordinate = voxels.checked ? voxelCentre(rotated) : rotated;
+            return { ...project(coordinate), index, coordinate };
+          });
+          if (!voxels.checked) {
+            ctx.strokeStyle = '#668c80'; ctx.lineWidth = 2;
+            ctx.beginPath();
+            transformed.forEach((point, index) => { if (index === 0) ctx.moveTo(point.x, point.y); else ctx.lineTo(point.x, point.y); });
+            ctx.stroke();
+          }
+          const bins = new Map<string, (typeof transformed)[number]>();
+          for (const point of transformed) {
+            const key = voxels.checked ? point.coordinate.join(',') : String(point.index);
+            const existing = bins.get(key);
+            // Preserve the mutation marker when multiple points occupy one bin.
+            if (!existing || point.index === 22) bins.set(key, point);
+          }
+          [...bins.values()].sort((a, b) => a.z - b.z).forEach((point) => {
+            const isMutant = canvas.dataset.structure === 'mutant' && point.index === 22;
+            ctx.globalAlpha = .5 + (point.z + 4) / 16;
+            ctx.fillStyle = isMutant ? '#f7aa91' : '#9de4cc';
+            if (voxels.checked) {
+              ctx.fillRect(point.x - 7, point.y - 7, 14, 14);
+              ctx.strokeStyle = '#101416'; ctx.strokeRect(point.x - 7, point.y - 7, 14, 14);
+            } else {
+              ctx.beginPath(); ctx.arc(point.x, point.y, isMutant ? 8 : 4.5, 0, Math.PI * 2); ctx.fill();
+            }
+            if (point.index === 22) {
+              ctx.globalAlpha = 1; ctx.strokeStyle = isMutant ? '#f7aa91' : '#9de4cc'; ctx.lineWidth = 1;
+              ctx.beginPath(); ctx.arc(point.x, point.y, 12, 0, Math.PI * 2); ctx.stroke();
+            }
+          });
+          ctx.globalAlpha = 1;
+          ctx.font = '11px monospace'; ctx.fillStyle = '#899b97';
+          ctx.fillText(voxels.checked ? 'VOXEL BINS / SCHEMATIC' : 'STRUCTURE / SCHEMATIC', 16, height - 15);
+        });
+      };
+      sliders.forEach((input) => input.addEventListener('input', draw));
+      voxels.addEventListener('change', draw);
+      this.querySelector('[data-reset]')!.addEventListener('click', () => {
+        sliders.forEach((input) => input.value = '0');
+        voxels.checked = false;
+        draw();
+      });
+      draw();
+    }
+  }
+  if (!customElements.get('rotation-demo')) customElements.define('rotation-demo', RotationDemo);
+</script>
+
+<style>
+  rotation-demo { display: block; border: 1px solid var(--line); background: var(--surface); }
+  .demo-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--line); }
+  .label-pill { font: .7rem var(--mono); color: var(--accent); }
+  .demo-canvases { display: grid; grid-template-columns: 1fr 1fr; background: var(--surface-deep); }
+  figure { min-width: 0; }
+  figure + figure { border-left: 1px solid var(--line); }
+  figcaption { display: flex; align-items: center; gap: .6rem; padding: 1.25rem 1.5rem 0; font-size: .8rem; }
+  canvas { width: 100%; aspect-ratio: 480 / 340; height: auto; }
+  .legend-dot { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; }
+  .mutant { background: #f7aa91; }
+  .demo-controls { padding: 1.5rem; border-top: 1px solid var(--line); }
+  fieldset { margin: 0; padding: 0; border: 0; }
+  legend { font-size: .85rem; margin-bottom: 1.2rem; }
+  .sliders { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2.5rem; }
+  .sliders label { font: .75rem var(--mono); color: var(--muted); }
+  output { float: right; color: var(--accent); }
+  input[type='range'] { display: block; width: 100%; margin: 1rem 0 0; min-height: 24px; }
+  .demo-options { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; margin-top: 1.4rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+  .voxel-toggle { display: flex; gap: .6rem; align-items: center; font-size: .8rem; }
+  .reset-button { color: var(--text); border: 1px solid var(--line); background: transparent; border-radius: 3px; padding: .6rem .8rem; font-size: .75rem; }
+  .reset-button:hover { border-color: var(--accent); }
+  .demo-summary { margin-top: 1rem; font: .7rem/1.7 var(--mono); color: var(--muted); }
+  .demo-caption, .no-js { border-top: 1px solid var(--line); padding: 1rem 1.5rem; color: var(--muted); font-size: .75rem; }
+  @media (max-width: 620px) {
+    .demo-canvases { grid-template-columns: 1fr; }
+    figure + figure { border-left: 0; border-top: 1px solid var(--line); }
+    .sliders { gap: 1rem; }
+    .demo-toolbar, .demo-controls { padding: 1rem; }
+    .demo-caption { padding: 1rem; }
+  }
+</style>

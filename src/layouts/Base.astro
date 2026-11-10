@@ -1,4 +1,5 @@
 ---
+import '../styles/global.css';
 interface Props { title: string; description: string; }
 const { title, description } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
@@ -8,25 +9,23 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#101416" />
     <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="canonical" href={canonical} />
+    <meta property="og:title" content={`${title} | Andrew Harrison`} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:type" content="website" />
     <title>{title} | Andrew Harrison</title>
   </head>
   <body>
-    <a href="#main">Skip to content</a>
-    <header><a href="/">Andrew Harrison</a></header>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header wrap">
+      <a class="wordmark" href="/" aria-label="Andrew Harrison, home"><span class="monogram" aria-hidden="true">ah<span>.</span></span><span>Andrew Harrison</span></a>
+      <nav aria-label="Main navigation"><a href="/#projects">Projects</a><a href="/#about">About</a><a href="https://github.com/andrewharrisonGH">GitHub <span aria-hidden="true">↗</span></a></nav>
+    </header>
     <main id="main"><slot /></main>
-    <footer><a href="https://github.com/andrewharrisonGH">GitHub</a></footer>
+    <footer class="site-footer wrap"><a class="footer-name" href="/">Andrew Harrison <span aria-hidden="true">/</span> Bioinformatics & code</a><a href="https://github.com/andrewharrisonGH/portfolio">Website source <span aria-hidden="true">↗</span></a></footer>
   </body>
 </html>
-<style is:global>
-  /* Dark developer baseline; page composition follows separately. */
-  :root { color-scheme: dark; font-family: system-ui, sans-serif; line-height: 1.6; color: #e2e8f0; background: #0d1117; }
-  body { max-width: 72rem; margin: auto; padding: 1.5rem; }
-  main { min-height: 65vh; padding-block: 2rem; }
-  a { color: #78dcca; }
-  img { max-width: 100%; height: auto; }
-  article { max-width: 75ch; }
-  pre { overflow-x: auto; padding: 1rem; }
-  :focus-visible { outline: 3px solid #78dcca; outline-offset: 4px; }
-</style>

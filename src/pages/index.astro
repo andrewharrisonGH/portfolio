@@ -1,28 +1,47 @@
 ---
 import { getCollection } from 'astro:content';
+import { Content as About, frontmatter as profile } from '../content/about.md';
 import Base from '../layouts/Base.astro';
 const projects = (await getCollection('projects', ({ data }) => import.meta.env.DEV || !data.draft))
   .sort((a, b) => a.data.order - b.data.order || a.data.title.localeCompare(b.data.title));
 const categories = [...new Set(projects.map(({ data }) => data.category))];
 ---
-<Base title="Coding projects" description="Coding projects by Andrew Harrison.">
-  <h1>Coding projects</h1>
-  {categories.map((category) => (
-    <section>
-      <h2>{category}</h2>
-      <ul>
+<Base title="Bioinformatics & code" description={profile.intro}>
+  <section class="hero wrap" aria-labelledby="intro-title">
+    <div>
+      <p class="eyebrow"><span class="status-dot" aria-hidden="true"></span> Bioinformatics · Computational biology</p>
+      <h1 id="intro-title">Biology, explored<br />through <span class="accent">code.</span></h1>
+      <p class="hero-intro">{profile.intro}</p>
+      <div class="actions"><a class="button" href="#projects">Explore my work <span aria-hidden="true">↓</span></a><a class="text-link" href="https://github.com/andrewharrisonGH">Find me on GitHub <span aria-hidden="true">↗</span></a></div>
+    </div>
+    <aside class="hero-note" aria-label="Research focus">
+      <span class="eyebrow">A question behind the code</span><p>How do we get<br /><em>more</em> from <em>less?</em></p>
+      <a href="/projects/protein-pirouettes/">Explore my Master's research <span aria-hidden="true">↗</span></a>
+      <div class="note-grid" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+    </aside>
+  </section>
+  <section id="projects" class="projects-section wrap" aria-labelledby="projects-title">
+    <div class="section-heading"><div><p class="eyebrow">01 / Selected work</p><h2 id="projects-title">From questions to projects.</h2></div><span class="small-note">Research, methods & demonstrations</span></div>
+    {categories.map((category) => (
+      <div class="project-category"><h3 class="category-label">{category}</h3><div class="project-grid">
         {projects.filter(({ data }) => data.category === category).map((project) => (
-          <li>
-            <article>
-              {project.data.image && <img src={project.data.image.src} alt={project.data.image.alt} loading="lazy" />}
-              <h3><a href={`/projects/${project.id}/`}>{project.data.title}</a></h3>
-              {project.data.draft && <p>Draft — local development preview</p>}
-              <p>{project.data.description}</p>
-            </article>
-          </li>
+          <article class="project-card">
+            {project.data.image && <a class="project-art" href={`/projects/${project.id}/`} tabindex="-1" aria-hidden="true"><img src={project.data.image.src} alt="" width="800" height="480" loading="lazy" /></a>}
+            <div class="project-card-body"><p class="eyebrow">{project.data.kind}{project.data.draft && ' · Draft'}</p>
+              <h4><a href={`/projects/${project.id}/`}>{project.data.shortTitle ?? project.data.title}<span aria-hidden="true">↗</span></a></h4>
+              {project.data.subtitle && <p class="project-subtitle">{project.data.subtitle}</p>}
+              <p class="project-description">{project.data.description}</p>
+              <ul class="tags" aria-label="Project topics">{project.data.tags.map((tag) => <li>{tag}</li>)}</ul>
+              <a class="text-link" href={`/projects/${project.id}/`}>Read the project & try the demo <span aria-hidden="true">→</span></a>
+            </div>
+          </article>
         ))}
-      </ul>
-    </section>
-  ))}
-  {projects.length === 0 && <p>Project write-ups are being prepared.</p>}
+      </div></div>
+    ))}
+    {projects.length === 0 && <p>Project write-ups are being prepared.</p>}
+  </section>
+  <section id="about" class="about-section wrap" aria-labelledby="about-title">
+    <div><p class="eyebrow">02 / A little about me</p><h2 id="about-title">Curiosity beyond<br />the dataset.</h2></div>
+    <div class="about-copy"><About /><p class="interest-intro">Away from the code, and sometimes inspiring it:</p><ul class="interests">{profile.interests.map((interest: string) => <li>{interest}</li>)}</ul></div>
+  </section>
 </Base>
